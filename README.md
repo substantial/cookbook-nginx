@@ -23,6 +23,9 @@ be controlled by an attribute, so it may not be a common "default."
 
 On RHEL family distros, the "yum" cookbook is required for "`recipe[yum::epel]`".
 
+On Ubuntu, when using Nginx.org's stable package, "`recipe[apt]`"
+is required.
+
 Platform
 --------
 
@@ -55,11 +58,24 @@ config file.
 * `node['nginx']['group]` - Group for Nginx.
 * `node['nginx']['binary']` - Path to the Nginx binary.
 * `node['nginx']['init_style']` - How to run Nginx as a service when
-  using `nginx::source`. Values can be "runit", "init" or "bluepill".
-  When using runit or bluepill, those recipes will be included as well
-  and are dependencies of this cookbook. Not used in the `nginx`
-  recipe because the package manager's init script style for the
-  platform is assumed.
+  using `nginx::source`. Values can be "runit", "upstart", "init" or
+  "bluepill".  When using runit or bluepill, those recipes will be
+  included as well and are dependencies of this cookbook.  Recipes
+  are not included for upstart, it is assumed that upstart is built
+  into the platform you are using (ubuntu or el6).  This attribute is
+  not used in the `nginx` recipe because the package manager's init
+  script style for the platform is assumed.  Upstart is never set as
+  a default as this represents a change in behavior, if you are running
+  ubuntu or el6 and want to use upstart, please set this attribute in
+  a role or similar.
+* `node['nginx']['upstart']['foreground']` - Set this to true if you
+  want upstart to run nginx in the foreground, set to false if you
+  want upstart to detach and track the process via pid.
+* `node['nginx']['upstart']['runlevels']` - String of runlevels in the
+  format '2345' which determines which runlevels nginx will start at
+  when entering and stop at when leaving.
+* `node['nginx']['upstart']['respawn_limit']` - Respawn limit in upstart
+  stanza format, count followed by space followed by interval in seconds.
 * `node['nginx']['pid']` - Location of the PID file.
 * `node['nginx']['keepalive']` - Whether to use `keepalive_timeout`,
   any value besides "on" will leave that option out of the config.
@@ -79,17 +95,45 @@ config file.
 * `node['nginx']['event']` - used for config value of `events { use
   }`. Set the event-model. By default nginx looks for the most
   suitable method for your OS.
+* `node['nginx']['server_tokens']` - used for config value of
+  `server_tokens`.
 * `node['nginx']['server_names_hash_bucket_size']` - used for config
   value of `server_names_hash_bucket_size`.
 * `node['nginx']['disable_access_log']` - set to true to disable the
   general access log, may be useful on high traffic sites.
+* `node['nginx']['access_log_options']` - Set to a string of additional options
+  to be appended to the access log directive
+* `node['nginx']['error_log_options']` - Set to a string of additional options
+  to be appended to the error log directive
 * `node['nginx']['default_site_enabled']` - enable the default site
+* `node['nginx']['sendfile']` - Whether to use `sendfile`. Defaults to "on".
 * `node['nginx']['install_method']` - Whether nginx is installed from
   packages or from source.
 * `node['nginx']['types_hash_max_size']` - Used for the
   `types_hash_max_size` configuration directive.
 * `node['nginx']['types_hash_bucket_size']` - Used for the
   `types_hash_bucket_size` configuration directive.
+* `node['nginx']['proxy_read_timeout']` - defines a timeout (between two
+  successive read operations) for reading a response from the proxied server.
+* `node['nginx']['client_body_buffer_size']` - used for config value of
+  `client_body_buffer_size`.
+* `node['nginx']['client_max_body_size']` - specifies the maximum accepted body
+  size of a client request, as indicated by the request header Content-Length.
+* `node['nginx']['repo_source']` - when installed from a package this attribute affects
+  which yum repositories, if any, will be added before installing the nginx package. The
+  default value of 'epel' will use the `yum::epel` recipe, 'nginx' will use the
+  `nginx::repo` recipe, and setting no value will not add any additional repositories.
+
+Rate Limiting attributes:
+
+* `node['nginx']['enable_rate_limiting']` - set to true to enable rate
+  limiting (`limit_req_zone` in nginx.conf)
+* `node['nginx']['rate_limiting_zone_name']` - sets the zone in
+  `limit_req_zone`.
+* `node['nginx']['rate_limiting_backoff']` - sets the backoff time for
+  `limit_req_zone`.
+* `node['nginx']['rate_limit']` - set the rate limit amount for
+  `limit_req_zone`.
 
 ### Attributes for configuring the gzip module
 
@@ -97,7 +141,11 @@ config file.
 * `node['nginx']['gzip_http_version']` - used for config value of `gzip_http_version`.
 * `node['nginx']['gzip_comp_level']` - used for config value of `gzip_comp_level`.
 * `node['nginx']['gzip_proxied']` - used for config value of `gzip_proxied`.
+* `node['nginx']['gzip_vary']` - used for config value of `gzip_vary`.
+* `node['nginx']['gzip_buffers']` - used for config value of `gzip_buffers`.
 * `node['nginx']['gzip_types']` - used for config value of `gzip_types` - must be an Array.
+* `node['nginx']['gzip_min_length']` - used for config value of `gzip_min_length`.
+* `node['nginx']['gzip_disable']` - used for config value of `gzip_disable`.
 
 ### Attributes set in recipes
 
@@ -117,12 +165,13 @@ config file.
 
 *nginx::http_realip_module*
 
-From: http://wiki.nginx.org/HttpRealIpModule
+From: http://nginx.org/en/docs/http/ngx_http_realip_module.html
 
 * `node['nginx']['realip']['header']` - Header to use for the RealIp
   Module; only accepts "X-Forwarded-For" or "X-Real-IP"
 * `node['nginx']['realip']['addresses']` - Addresses to use for the
   `http_realip` configuration.
+* `node['nginx']['realip']['real_ip_recursive']` - If recursive search is enabled, the original client address that matches one of the trusted addresses is replaced by the last non-trusted address sent in the request header field. Can be on "on" or "off" (default).
 
 ## source.rb
 
@@ -182,9 +231,16 @@ your node location.
 These attributes are used in the `nginx::upload_progress_module`
 recipe.
 
-* `node['nginx']['upload_progress]['url']` - URL for the tarball.
+* `node['nginx']['upload_progress']['url']` - URL for the tarball.
 * `node['nginx']['upload_progress']['checksum']` - Checksum of the
   tarball.
+* `node['nginx']['upload_progress']['javascript_output']` - Output in javascript.
+  Default is `true` for backwards compatibility.
+* `node['nginx']['upload_progress']['zone_name']` - Zone name which will
+  be used to store the per-connection tracking information.
+  Default is `proxied`.
+* `node['nginx']['upload_progress']['zone_size']` - Zone size in bytes.
+  Default is `1m` (1 megabyte).
 
 ## passenger.rb
 
@@ -217,17 +273,36 @@ These attributes are used in the `nginx::passenger` recipe.
 
 These attributes are used in the `nginx::http_echo_module` recipe.
 
-* `node['nginx']['echo]['version']` - The version of `http_echo` you want (default: 0.40)
-* `node['nginx']['echo]['url']` - URL for the tarball.
+* `node['nginx']['echo']['version']` - The version of `http_echo` you
+  want (default: 0.40)
+* `node['nginx']['echo']['url']` - URL for the tarball.
 * `node['nginx']['echo']['checksum']` - Checksum of the tarball.
+
+## status.rb
+
+These attributes are used in the `nginx::http_stub_status_module` recipe.
+
+* `node['nginx']['status']['port']` - The port on which nginx will
+  serve the status info (default: 8090)
+
+## openssl_source.rb
+
+These attributes are used in the `nginx::openssl_source` recipe.
+
+* `node['nginx']['openssl_source']['version']` - The version of OpenSSL
+  you want to download and use (default: 1.0.1e)
+* `node['nginx']['openssl_source']['url']` - The url for the OpenSSL source
 
 Recipes
 =======
 
-This cookbook provides two main recipes for installing Nginx.
+This cookbook provides three main recipes for installing Nginx.
 
 * default.rb: *Use this recipe* if you have a native package for
   Nginx.
+* repo.rb: The developer of Nginx also maintain
+  [stable packages](http://nginx.org/en/download.html) for several
+  platforms.
 * source.rb: *Use this recipe* if you do not have a native package for
   Nginx, or if you want to install a newer version than is available,
   or if you have custom module compilation needs.
@@ -285,6 +360,7 @@ The following recipes are used to build module support into Nginx. To
 use a module in the `nginx::source` recipe, add its recipe name to the
 attribute `node['nginx']['source']['modules']`.
 
+* `ipv6.rb` - enables IPv6 support
 * `http_echo_module.rb` - downloads the `http_echo_module` module and
   enables it as a module when compiling nginx.
 * `http_geoip_module.rb` - installs the GeoIP libraries and data files
@@ -301,6 +377,8 @@ attribute `node['nginx']['source']['modules']`.
   "`mod_passenger`".
 * `upload_progress_module.rb` - builds the `upload_progress` module
   and enables it as a module when compiling nginx.
+* `openssl_source.rb` - downloads and uses custom OpenSSL source
+  when compiling nginx
 
 Adding New Modules
 ------------------

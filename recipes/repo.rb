@@ -1,7 +1,6 @@
-#
 # Cookbook Name:: nginx
-# Recipe:: default
-# Author:: AJ Christensen <aj@junglist.gen.nz>
+# Recipe:: repo
+# Author:: Nick Rycar <nrycar@bluebox.net>
 #
 # Copyright 2008-2012, Opscode, Inc.
 #
@@ -16,16 +15,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-case node['nginx']['install_method']
-when 'source'
-  include_recipe 'nginx::source'
-when 'package'
-  include_recipe 'nginx::package'
-end
+case node['platform_family']
+when "rhel","fedora"
+  include_recipe "yum"
 
-service 'nginx' do
-  supports :status => true, :restart => true, :reload => true
-  action :start
+  yum_key "nginx" do
+    url 'http://nginx.org/keys/nginx_signing.key'
+    action :add
+  end
+
+  yum_repository "nginx" do
+    description "Nginx.org Repository"
+    url node['nginx']['upstream_repository']
+  end
+when "debian"
+  include_recipe "apt"
+
+  apt_repository "nginx" do
+    uri node['nginx']['upstream_repository']
+    distribution node['lsb']['codename']
+    components ["nginx"]
+    deb_src true
+    key 'http://nginx.org/keys/nginx_signing.key'
+  end
 end

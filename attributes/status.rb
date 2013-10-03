@@ -1,8 +1,10 @@
 #
-# Cookbook Name:: nginx_test
-# Recipe:: passenger
+# Cookbook Name:: nginx
+# Attributes:: status
 #
-# Copyright 2012, Opscode, Inc.
+# Author:: David Radcliffe (<radcliffe.david@gmail.com>)
+#
+# Copyright 2013, David Radcliffe
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,5 +19,4 @@
 # limitations under the License.
 #
 
-node['nginx']['source']['modules'] << "passenger"
-include_recipe "nginx::source"
+default['nginx']['status']['port'] = "8090"

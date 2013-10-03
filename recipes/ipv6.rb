@@ -2,9 +2,8 @@
 # Cookbook Name:: nginx
 # Recipe:: ipv6
 #
-# Author:: Jamie Winsor (<jamie@vialstudios.com>)
+# Author:: Alan Harper (alan@sct.com.au)
 #
-# Copyright 2012, Riot Games
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

@@ -1,8 +1,10 @@
 #
-# Cookbook Name:: nginx_test
-# Recipe:: ohai_plugin
+# Cookbook Name:: nginx
+# Attributes:: openssl_source
 #
-# Copyright 2012, Opscode, Inc.
+# Author:: David Radcliffe (<radcliffe.david@gmail.com>)
+#
+# Copyright 2013, David Radcliffe
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,4 +19,5 @@
 # limitations under the License.
 #
 
-include_recipe "nginx::ohai_plugin"
+default['nginx']['openssl_source']['version']  = "1.0.1e"
+default['nginx']['openssl_source']['url']      = "http://www.openssl.org/source/openssl-#{node['nginx']['openssl_source']['version']}.tar.gz"

@@ -1,7 +1,6 @@
-#
 # Cookbook Name:: nginx
-# Recipe:: default
-# Author:: AJ Christensen <aj@junglist.gen.nz>
+# Recipe:: repo
+# Author:: Nick Rycar <nrycar@bluebox.net>
 #
 # Copyright 2008-2012, Opscode, Inc.
 #
@@ -16,16 +15,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-case node['nginx']['install_method']
-when 'source'
-  include_recipe 'nginx::source'
-when 'package'
-  include_recipe 'nginx::package'
-end
-
-service 'nginx' do
-  supports :status => true, :restart => true, :reload => true
-  action :start
+case node['platform_family']
+when 'rhel','fedora'
+  case node['platform']
+  when "centos"
+    # See http://wiki.nginx.org/Install
+    default['nginx']['upstream_repository'] = "http://nginx.org/packages/centos/#{node['platform_version'].to_i}/$basearch/"
+  else
+    default['nginx']['upstream_repository'] = "http://nginx.org/packages/rhel/#{node['platform_version'].to_i}/$basearch/"
+  end
+when 'debian'
+  default['nginx']['upstream_repository'] = "http://nginx.org/packages/#{node['platform']}"
 end

@@ -1,8 +1,10 @@
 #
-# Cookbook Name:: nginx_test
-# Recipe:: http_echo_module
+# Cookbook Name:: nginx
+# Recipe:: http_spdy_module
 #
-# Copyright 2012, Opscode, Inc.
+# Author:: Christoph Buente (<christoph@meinekleinefarm.org>)
+#
+# Copyright 2013, MeinekleineFarm.org
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,5 +19,5 @@
 # limitations under the License.
 #
 
-node['nginx']['source']['modules'] << "http_echo_module"
-include_recipe "nginx::source"
+node.run_state['nginx_configure_flags'] =
+  node.run_state['nginx_configure_flags'] | ["--with-http_spdy_module"]

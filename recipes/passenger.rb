@@ -15,30 +15,21 @@
 # limitations under the License.
 #
 
-node.default["nginx"]["passenger"]["version"] = "3.0.12"
-node.default["nginx"]["passenger"]["root"] = "/usr/lib/ruby/gems/1.8/gems/passenger-3.0.12"
-node.default["nginx"]["passenger"]["ruby"] = %x{which ruby}.chomp
-node.default["nginx"]["passenger"]["max_pool_size"] = 10
-node.default["nginx"]["passenger"]["spawn_method"] = "smart-lv2"
-node.default["nginx"]["passenger"]["use_global_queue"] = "on"
-node.default["nginx"]["passenger"]["buffer_response"] = "on"
-node.default["nginx"]["passenger"]["max_pool_size"] = 6
-node.default["nginx"]["passenger"]["min_instances"] = 1
-node.default["nginx"]["passenger"]["max_instances_per_app"] = 0
-node.default["nginx"]["passenger"]["pool_idle_time"] = 300
-node.default["nginx"]["passenger"]["max_requests"] = 0
+packages = value_for_platform( ["redhat", "centos", "scientific", "amazon", "oracle"] => {
+                                 "default" => %w(ruby-devel curl-devel) },
+                               ["ubuntu", "debian"] => {
+                                 "default" => %w(ruby-dev libcurl4-gnutls-dev) } )
 
-package "ruby-devel" do
-  package_name value_for_platform( ["redhat", "centos", "scientific", "amazon", "oracle"] => {
-                                     "default" => "ruby-devel" },
-                                   ["ubuntu", "debian"] => {
-                                     "default" => "ruby-dev" } )
-  action :install
+packages.each do |devpkg|
+  package devpkg
 end
+
+gem_package 'rake'
 
 gem_package 'passenger' do
   action :install
   version node["nginx"]["passenger"]["version"]
+  gem_binary node["nginx"]["passenger"]["gem_binary"] if node["nginx"]["passenger"]["gem_binary"]
 end
 
 template "#{node["nginx"]["dir"]}/conf.d/passenger.conf" do
@@ -49,7 +40,6 @@ template "#{node["nginx"]["dir"]}/conf.d/passenger.conf" do
   variables(
     :passenger_root => node["nginx"]["passenger"]["root"],
     :passenger_ruby => node["nginx"]["passenger"]["ruby"],
-    :passenger_max_pool_size => node["nginx"]["passenger"]["max_pool_size"],
     :passenger_spawn_method => node["nginx"]["passenger"]["spawn_method"],
     :passenger_use_global_queue => node["nginx"]["passenger"]["use_global_queue"],
     :passenger_buffer_response => node["nginx"]["passenger"]["buffer_response"],
@@ -62,5 +52,5 @@ template "#{node["nginx"]["dir"]}/conf.d/passenger.conf" do
   notifies :reload, "service[nginx]"
 end
 
-node.run_state[:nginx_configure_flags] =
-  node.run_state[:nginx_configure_flags] | ["--add-module=#{node["nginx"]["passenger"]["root"]}/ext/nginx"]
+node.run_state['nginx_configure_flags'] =
+  node.run_state['nginx_configure_flags'] | ["--add-module=#{node["nginx"]["passenger"]["root"]}/ext/nginx"]
