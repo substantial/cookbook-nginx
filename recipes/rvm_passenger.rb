@@ -23,20 +23,16 @@ gemset = node["nginx"]["passenger"]["rvm"]["gemset"]
 ruby_string = "#{ruby}@#{gemset}"
 
 node.default["nginx"]["passenger"]["ruby"] = "/usr/local/rvm/wrappers/#{ruby}/ruby"
-node.default["nginx"]["passenger"]["version"] = "3.0.18"
 node.default["nginx"]["passenger"]["root"] = "/usr/local/rvm/gems/#{ruby_string}/gems/passenger-3.0.18"
-node.default["nginx"]["passenger"]["max_pool_size"] = 10
-node.default["nginx"]["passenger"]["spawn_method"] = "smart-lv2"
-node.default["nginx"]["passenger"]["use_global_queue"] = "on"
-node.default["nginx"]["passenger"]["buffer_response"] = "on"
-node.default["nginx"]["passenger"]["max_pool_size"] = 6
-node.default["nginx"]["passenger"]["min_instances"] = 1
-node.default["nginx"]["passenger"]["max_instances_per_app"] = 0
-node.default["nginx"]["passenger"]["pool_idle_time"] = 300
-node.default["nginx"]["passenger"]["max_requests"] = 0
 
+packages = value_for_platform( ["redhat", "centos", "scientific", "amazon", "oracle"] => {
+                                 "default" => %w(ruby-devel curl-devel) },
+                               ["ubuntu", "debian"] => {
+                                 "default" => %w(ruby-dev libcurl4-gnutls-dev) } )
 
-package "curl-devel"
+packages.each do |devpkg|
+  package devpkg
+end
 
 rvm_gemset gemset do
   ruby_string ruby
@@ -67,7 +63,6 @@ template "#{node["nginx"]["dir"]}/conf.d/passenger.conf" do
   variables(
     :passenger_root => node["nginx"]["passenger"]["root"],
     :passenger_ruby => node["nginx"]["passenger"]["ruby"],
-    :passenger_max_pool_size => node["nginx"]["passenger"]["max_pool_size"],
     :passenger_spawn_method => node["nginx"]["passenger"]["spawn_method"],
     :passenger_use_global_queue => node["nginx"]["passenger"]["use_global_queue"],
     :passenger_buffer_response => node["nginx"]["passenger"]["buffer_response"],
